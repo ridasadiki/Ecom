@@ -36,17 +36,12 @@ class CategoryController extends Controller
             ->with('success', 'Category created successfully.');
     }
 
-    /**
-     * Show quick create form in a modal
-     */
+    
     public function createQuick()
     {
         return view('admin.categories.quick-create');
     }
 
-    /**
-     * Store a new category from quick form
-     */
     public function storeQuick(Request $request)
     {
         $validated = $request->validate([

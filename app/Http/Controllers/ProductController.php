@@ -13,7 +13,6 @@ class ProductController extends Controller
 {
     public function __construct()
     {
-        // Temporarily disable auth for testing
         // $this->middleware('auth');
     }
     
@@ -22,7 +21,6 @@ class ProductController extends Controller
         $categories = Category::all();
         $query = Product::with('category');
 
-        // Search by name or description
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->search . '%';
             $query->where(function($q) use ($searchTerm) {
@@ -31,12 +29,10 @@ class ProductController extends Controller
             });
         }
 
-        // Filter by category if provided
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
 
-        // Filter by price range if provided
         if ($request->filled('min_price')) {
             $query->where('price', '>=', (float)$request->min_price);
         }
@@ -44,7 +40,6 @@ class ProductController extends Controller
             $query->where('price', '<=', (float)$request->max_price);
         }
 
-        // Sort products
         switch ($request->input('sort', 'latest')) {
             case 'price_low':
                 $query->orderBy('price', 'asc');
@@ -62,7 +57,6 @@ class ProductController extends Controller
 
         $products = $query->paginate(12);
         
-        // Preserve query parameters in pagination links
         $products->appends($request->all());
         
         return view('products.catalog', [
@@ -102,13 +96,11 @@ class ProductController extends Controller
                 'description' => 'nullable|string',
                 'price' => 'required|numeric|min:0',
                 'category_id' => 'required|exists:categories,id',
-                'image' => 'required|string', // Changed validation for AI-generated images
+                'image' => 'required|string',
             ]);
 
             Log::info('Validation passed. Validated data:', $validated);
 
-            // The image path is already in storage/products from the AI generation
-            // Just ensure it exists
             if (!Storage::disk('public')->exists($validated['image'])) {
                 Log::error('Generated image not found:', ['path' => $validated['image']]);
                 return back()
@@ -159,7 +151,6 @@ class ProductController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('image')) {
-            // Delete old image if exists
             if ($product->image) {
                 Storage::delete('public/' . $product->image);
             }

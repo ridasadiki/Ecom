@@ -22,7 +22,6 @@ class OpenAIController extends Controller
     public function generateProduct(Request $request)
     {
         try {
-            // Validate request
             $validated = $request->validate([
                 'category_id' => 'required|exists:categories,id',
                 'keywords' => 'required|string'
@@ -35,7 +34,6 @@ class OpenAIController extends Controller
                 ], 404);
             }
 
-            // Prepare the prompt
             $prompt = "Generate a product for the {$category->name} category with these features: {$validated['keywords']}. " .
                      "Format the response as a valid JSON object with exactly these fields:\n" .
                      "{\n" .
@@ -46,7 +44,6 @@ class OpenAIController extends Controller
                      "Make the description detailed and marketing-focused. Price should be realistic for the product type. " .
                      "Return ONLY the JSON object, no other text.";
 
-            // Call Google Gemini API
             $response = Http::withoutVerifying()->withHeaders([
                 'Content-Type' => 'application/json',
             ])->post('https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=' . env('GOOGLE_API_KEY'), [
@@ -69,14 +66,12 @@ class OpenAIController extends Controller
 
             $data = $response->json();
 
-            // Check for API errors first
             if (isset($data['error'])) {
                 return Response::json([
                     'error' => 'Google API Error: ' . $data['error']['message']
                 ], 400);
             }
 
-            // Check if response contains expected fields
             if (!isset($data['candidates'][0]['content']['parts'][0]['text'])) {
                 return Response::json([
                     'error' => 'AI response is missing expected data',
@@ -84,11 +79,9 @@ class OpenAIController extends Controller
                 ], 400);
             }
 
-            // Get the response text and clean it up
             $assistantReply = $data['candidates'][0]['content']['parts'][0]['text'];
             $assistantReply = preg_replace('/```json\s*|\s*```/', '', trim($assistantReply));
             
-            // Parse the JSON from the response
             $productData = json_decode($assistantReply, true);
 
             if (!is_array($productData)) {
@@ -98,7 +91,6 @@ class OpenAIController extends Controller
                 ], 400);
             }
 
-            // Validate required fields
             if (!isset($productData['name']) || !isset($productData['description']) || !isset($productData['price'])) {
                 return Response::json([
                     'error' => 'AI response missing required fields',
@@ -140,16 +132,14 @@ class OpenAIController extends Controller
                 ], 500);
             }
 
-            // Log the request for debugging
             Log::info('Generating image with prompt: ' . $request->prompt);
 
             $client = new Client([
-                'verify' => false, // As per MEMORY, SSL verification disabled for local development
-                'timeout' => 90, // Increased timeout for image generation
-                'connect_timeout' => 30 // Added separate connection timeout
+                'verify' => false,
+                'timeout' => 90,
+                'connect_timeout' => 30
             ]);
 
-            // Using stabilityai/stable-diffusion-3-medium-diffusers as per MEMORY
             $response = $client->post('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $apiKey,
@@ -165,7 +155,6 @@ class OpenAIController extends Controller
                 ]
             ]);
 
-            // Log the response status and headers for debugging
             Log::info('Response status: ' . $response->getStatusCode());
             Log::info('Response headers: ' . json_encode($response->getHeaders()));
 
@@ -173,7 +162,6 @@ class OpenAIController extends Controller
                 $error = $response->getBody()->getContents();
                 Log::error('Image generation failed: ' . $error);
 
-                // Check if we got an HTML response (auth error)
                 if (str_contains($error, '<!DOCTYPE')) {
                     Log::error('Received HTML error page, likely an authentication issue');
                     return Response::json([
@@ -181,7 +169,6 @@ class OpenAIController extends Controller
                     ], 401);
                 }
 
-                // Try to parse error message if it's JSON
                 try {
                     $errorData = json_decode($error, true);
                     if (json_last_error() === JSON_ERROR_NONE) {
@@ -198,10 +185,8 @@ class OpenAIController extends Controller
                 ], $response->getStatusCode());
             }
 
-            // Get the response content
             $imageData = $response->getBody()->getContents();
 
-            // Check if we got binary data
             $contentType = $response->getHeaderLine('Content-Type');
             if (!$contentType || !str_contains($contentType, 'image/')) {
                 Log::error('Invalid response type: ' . $contentType);
@@ -211,16 +196,13 @@ class OpenAIController extends Controller
                 ], 400);
             }
 
-            // Ensure the products directory exists in public/storage as per MEMORY
             if (!Storage::disk('public')->exists('products')) {
                 Storage::disk('public')->makeDirectory('products');
             }
 
-            // Save the image with correct extension based on content type
             $extension = str_contains($contentType, 'image/jpeg') ? 'jpg' : 'png';
             $filename = 'products/' . uniqid() . '.' . $extension;
             
-            // Save the image and ensure it was successful
             if (!Storage::disk('public')->put($filename, $imageData)) {
                 Log::error('Failed to save image to storage');
                 return Response::json([
@@ -230,7 +212,6 @@ class OpenAIController extends Controller
 
             Log::info('Image saved successfully: ' . $filename);
 
-            // Verify the file exists and is readable
             if (!Storage::disk('public')->exists($filename)) {
                 Log::error('Saved image file not found: ' . $filename);
                 return Response::json([
@@ -238,12 +219,12 @@ class OpenAIController extends Controller
                 ], 500);
             }
 
-            return $filename; // Return just the filename for product generation
+            return $filename;
 
         } catch (\Exception $e) {
             Log::error('Image generation error: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            throw $e; // Re-throw the exception to be handled by the product generator
+            throw $e;
         }
     }
 

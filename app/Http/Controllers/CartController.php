@@ -25,16 +25,13 @@ class CartController extends Controller
     {
         $cart = Auth::user()->cart;
         
-        // Check if product already exists in cart
         $cartItem = $cart->items()->where('product_id', $product->id)->first();
         
         if ($cartItem) {
-            // Update quantity if product exists
             $cartItem->update([
                 'quantity' => $cartItem->quantity + 1
             ]);
         } else {
-            // Create new cart item if product doesn't exist
             $cart->items()->create([
                 'product_id' => $product->id,
                 'quantity' => 1,
@@ -47,7 +44,6 @@ class CartController extends Controller
 
     public function remove(CartItem $cartItem)
     {
-        // Ensure the cart item belongs to the authenticated user
         if ($cartItem->cart->user_id !== Auth::id()) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }
@@ -58,7 +54,6 @@ class CartController extends Controller
 
     public function update(CartItem $cartItem, Request $request)
     {
-        // Ensure the cart item belongs to the authenticated user
         if ($cartItem->cart->user_id !== Auth::id()) {
             return redirect()->back()->with('error', 'Unauthorized action.');
         }

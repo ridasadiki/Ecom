@@ -40,7 +40,6 @@ class ProductController extends Controller
             'sku' => 'nullable|string|max:50|unique:products,sku'
         ]);
 
-        // Generate image using Hugging Face's Stable Diffusion if no image is uploaded
         if (!$request->hasFile('image')) {
             $imagePrompt = new Request([
                 'prompt' => $validated['name'] . '. ' . substr($validated['description'], 0, strpos($validated['description'], '.') ?: strlen($validated['description'])) . '. Professional product photography, white background, high resolution.'
@@ -107,18 +106,12 @@ class ProductController extends Controller
             ->with('success', 'Product deleted successfully.');
     }
 
-    /**
-     * Show the form for generating a new product
-     */
     public function showGenerateForm()
     {
         $categories = Category::all();
         return view('admin.products.generate', compact('categories'));
     }
 
-    /**
-     * Generate a new product using AI
-     */
     public function generateProduct(Request $request)
     {
         try {
@@ -128,21 +121,16 @@ class ProductController extends Controller
                 'image_style' => 'nullable|string'
             ]);
 
-            // Generate product name from keywords
             $name = ucwords($validated['keywords']);
 
-            // Generate description based on keywords and category
             $category = Category::find($validated['category_id']);
             $description = $this->generateDescription($name, $category->name);
             
-            // Generate price based on category and keywords
             $price = $this->generatePrice($category->name);
 
-            // Generate image using Hugging Face's Stable Diffusion
             $imagePrompt = $name . '. ' . ($validated['image_style'] ?? 'Professional product photography, white background, high resolution.');
             
-            // Call the Hugging Face API directly
-            $client = new Client(['verify' => false]);  // SSL verification disabled for local development
+            $client = new Client(['verify' => false]);
             $response = $client->post('https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3-medium-diffusers', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . env('HUGGINGFACE_API_KEY'),
@@ -162,12 +150,10 @@ class ProductController extends Controller
                 throw new \Exception('Failed to generate image');
             }
 
-            // Save the image
             $imageData = $response->getBody()->getContents();
             $imageName = 'products/' . Str::random(40) . '.png';
             Storage::disk('public')->put($imageName, $imageData);
 
-            // Create the product
             $product = Product::create([
                 'name' => $name,
                 'description' => $description,
@@ -195,9 +181,6 @@ class ProductController extends Controller
         }
     }
 
-    /**
-     * Generate a product description based on name and category
-     */
     private function generateDescription($name, $categoryName)
     {
         $descriptions = [
@@ -212,9 +195,6 @@ class ProductController extends Controller
         return $descriptions[$categoryName] ?? "Introducing the {$name}, a premium quality product designed with attention to detail and superior craftsmanship.";
     }
 
-    /**
-     * Generate a price based on category
-     */
     private function generatePrice($categoryName)
     {
         $priceRanges = [
@@ -232,6 +212,6 @@ class ProductController extends Controller
 
     private function generateImage(Request $request)
     {
-        // This method is no longer used
+
     }
 }

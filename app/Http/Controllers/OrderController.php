@@ -38,12 +38,11 @@ class OrderController extends Controller
         $product = Product::find($request->product_id);
         $total_price = $product->price * $request->quantity;
 
-        // Create the order with the new fields
         Order::create([
             'product_id' => $request->product_id,
             'quantity' => $request->quantity,
             'total_price' => $total_price,
-            'is_delivered' => false, // Default to not delivered
+            'is_delivered' => false,
             'client_name' => $request->client_name,
             'client_address' => $request->client_address,
             'client_phone' => $request->client_phone,
@@ -67,7 +66,7 @@ class OrderController extends Controller
             'client_name' => 'required|string|max:255',
             'client_address' => 'required|string|max:255',
             'client_phone' => 'required|string|max:15',
-            'is_delivered' => 'nullable|boolean', // Allow marking as delivered or not
+            'is_delivered' => 'nullable|boolean',
         ]);
 
         $product = Product::find($request->product_id);
@@ -77,7 +76,7 @@ class OrderController extends Controller
             'product_id' => $request->product_id,
             'quantity' => $request->quantity,
             'total_price' => $total_price,
-            'is_delivered' => $request->is_delivered, // Update delivery status
+            'is_delivered' => $request->is_delivered,
             'client_name' => $request->client_name,
             'client_address' => $request->client_address,
             'client_phone' => $request->client_phone,
@@ -94,17 +93,13 @@ class OrderController extends Controller
     }
     public function updateDeliveryStatus(Request $request, Order $order)
     {
-        // Validate the input
         $request->validate([
             'is_delivered' => 'required|boolean',
         ]);
-
-        // Update the delivery status
         $order->update([
             'is_delivered' => $request->is_delivered,
         ]);
 
-        // Return a JSON response to confirm the update
         return response()->json(['success' => true]);
     }
 }

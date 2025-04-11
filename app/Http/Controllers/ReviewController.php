@@ -17,7 +17,6 @@ class ReviewController extends Controller
             'comment' => 'nullable|string|max:1000'
         ]);
 
-        // Check if user has already reviewed this product
         $existingReview = Review::where('user_id', Auth::id())
             ->where('product_id', $product->id)
             ->first();
@@ -26,7 +25,6 @@ class ReviewController extends Controller
             return back()->with('error', 'You have already reviewed this product');
         }
 
-        // Check if user has purchased this product
         $verifiedPurchase = Order::where('user_id', Auth::id())
             ->where('product_id', $product->id)
             ->where('is_delivered', true)

@@ -18,7 +18,6 @@ class DashboardController extends Controller
         $totalProducts = Product::count();
         $totalUsers = User::where('role', 'customer')->count();
         
-        // Get sales data for the last 7 days
         $salesData = Order::select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('SUM(total_price) as total_sales'),
@@ -29,7 +28,6 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->get();
 
-        // Get product distribution by category
         $categoryData = Category::withCount('products')
             ->get()
             ->map(function ($category) {
@@ -39,7 +37,6 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get customer registration trend by week for the last 6 weeks
         $customerTrend = User::select(
             DB::raw('DATE(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY)) as week_start'),
             DB::raw('COUNT(*) as count')

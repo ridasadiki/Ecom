@@ -20,11 +20,6 @@ class LoginController extends Controller
 
     use AuthenticatesUsers;
 
-    /**
-     * Get the post register / login redirect path.
-     *
-     * @return string
-     */
     protected function redirectTo()
     {
         if (auth()->user()->role === 'admin') {
@@ -33,11 +28,6 @@ class LoginController extends Controller
         return '/';
     }
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('guest')->except('logout');

@@ -41,10 +41,8 @@ class ChatController extends Controller
 
             $message->load('user');
 
-            // Log before broadcasting
             Log::info('Broadcasting message', ['message' => $message->toArray()]);
 
-            // Broadcast the message
             broadcast(new NewChatMessage($message))->toOthers();
 
             return response()->json($message);
@@ -77,10 +75,8 @@ class ChatController extends Controller
 
             $message->load('user');
 
-            // Log before broadcasting
             Log::info('Broadcasting admin message', ['message' => $message->toArray()]);
 
-            // Broadcast the message
             broadcast(new NewChatMessage($message))->toOthers();
 
             return response()->json($message);
